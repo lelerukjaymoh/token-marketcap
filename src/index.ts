@@ -16,10 +16,11 @@ class MarketCap {
         "0xE2fE530C047f2d85298b07D9333C05737f1435fB", // TrustSwap: Team Finance
         ZeroAddress, // Zero address
         "0x000000000000000000000000000000000000dead"  // Dead / Burn address
+        // ADD MORE ADDRESSES THAT COULD BE HOLDING TOKENS IN THIS LIST  
     ];
 
 
-    fetchTokenPrice = async (tokenAddress: string) => {
+    fetchMarketCap = async (tokenAddress: string): Promise<Number> => {
         // query the deriveETH from subgraph
         // get the current eth price
         // returns the token price in usd
@@ -47,6 +48,8 @@ class MarketCap {
             const tokensInCirculation = Number(await this.fetchCirculatingSupply(tokenAddress))
             const marketCap = tokensInCirculation * token.derivedETH * bundle.ethPrice
             console.log("\nmarketCap ", marketCap);
+
+            return marketCap
         } catch (error: any) {
             console.error("Error fetching data from the subgraph:", error);
             throw new Error(error)
@@ -56,9 +59,6 @@ class MarketCap {
 
     fetchCirculatingSupply = async (tokenAddress: string) => {
         try {
-            // Use MakerDao's multicall contract to fetch the balance of different addresses that could be holding the token
-            // in one request, in order to make it fast 
-            // This includes deadAddress, liquidity locking contract (eg unicrypt), etc
             const multiCallContract = new Contract(this.multicallAddress, multicallABI, this.provider)
             const tokenContract = new Contract(tokenAddress, tokenABI, this.provider)
 
@@ -69,6 +69,8 @@ class MarketCap {
                 }
             })
 
+            // Use MakerDao's multicall contract to fetch the balance of different addresses 
+            // that could be holding the token in one request. This includes deadAddress, liquidity locking contract (eg unicrypt), etc
             const response = await multiCallContract.tryAggregate.staticCall(
                 false,
                 batchCalldata
@@ -111,4 +113,4 @@ class MarketCap {
 }
 
 const m = new MarketCap();
-m.fetchTokenPrice("0xff836a5821e69066c87e268bc51b849fab94240c")
+m.fetchMarketCap("0xff836a5821e69066c87e268bc51b849fab94240c")
